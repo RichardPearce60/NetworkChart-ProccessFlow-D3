@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>D3 Page Template</title>
+        <script src="//d3js.org/d3.v3.min.js"></script>
+        
+        <!-- <link rel="stylesheet" href="../flexboxgrid.min.css" type="text/css"> -->
+
+
+        <style>
+
+            .link {
+                stroke: #000;
+            }
+
+            .node {
+                cursor: move;
+                fill: #6ca9c4;
+                stroke: #63615c;
+                stroke-width: 1.5px;
+            }
+            
+            .nodetext{
+                cursor: move;
+                color: black;
+                font:11px sans-serif;
+
+            }
+
+            div.tooltip {	
+                position: absolute;
+                    text-align: center;
+                    /* height: 80px; */
+                    padding: 10px 10px;
+                    font: 13px sans-serif;
+                    background-color: #116466;
+                    color: #EDF7FA;
+                    border: 0px;
+                    border-radius: 8px;
+                    pointer-events: none;
+                    line-height: 28px;	
+
+                    border-radius: 5px 5px;
+                    -moz-border-radius: 5px;
+                    -webkit-border-radius: 5px;
+                    box-shadow: 5px 5px 5px rgba(0, 0, 0, 0.1);
+                    -webkit-box-shadow: 5px 5px rgba(0, 0, 0, 0.1);
+                    -moz-box-shadow: 5px 5px rgba(0, 0, 0, 0.1);
+                }
+
+            .svg {
+                font: 10px sans-serif;
+            } 
+
+            </style>
+
+
+    </head>
+    <body>
+
+      
+
+        <script type="text/javascript">
+
+                var NetWorkViz ={}; // Declare Global Object
+
+
+                NetWorkViz.width = 960,
+                NetWorkViz.height = 500;
+
+                NetWorkViz.radius = 40,
+                NetWorkViz.side   = 2 * NetWorkViz.radius * Math.cos(Math.PI / 4),
+                NetWorkViz.dx     = NetWorkViz.radius - NetWorkViz.side / 2;
+
+
+
+                NetWorkViz.svg = d3.select("body").append("svg")
+                            .attr("viewBox", [0, 0, NetWorkViz.width, NetWorkViz.height])
+                            .attr("class", "svg")	;
+
+                NetWorkViz.force = d3.layout.force()
+                    .size([NetWorkViz.width, NetWorkViz.height])
+                    .on("tick", tick);
+
+                NetWorkViz.drag = NetWorkViz.force.drag()
+                    .on("dragstart", dragstart);
+
+                NetWorkViz.link = NetWorkViz.svg.append("g").selectAll(".link"),
+                NetWorkViz.node = NetWorkViz.svg.append("g").selectAll(".node");
+
+                NetWorkViz.FrequencyScaleStrokeWidth = [];   
+
+
+                d3.json("graph.json", function(error, graph) {
+                        if (error) throw error;
+
+                        NetWorkViz.force
+                            .nodes(graph.nodes)
+                            .links(graph.links)
+                            .start();
+
+ 
+                        // Scales
+                        NetWorkViz.FrequencyScaleStrokeWidth = d3.scale.linear()  
+                            .domain([1, d3.max(graph.links , function(d) { return d.Frequency; })])  // In
+                            .range([0.5, 4.5]);  // out
+                        
+                        NetWorkViz.FrequencyScaleColor = d3.scale.linear()
+                            .domain([0, d3.max(graph.links , function(d) { return d.Frequency; })])  // In
+                            .interpolate(d3.interpolateHcl)
+                            .range([d3.rgb("#a6c3e3"), d3.rgb('#0f58a8')]);
+
+                        NetWorkViz.RagTypes = Array.from(new Set(graph.links.map(d => d.AHT_Rag)));
+
+
+                        // build the arrow. 
+                        NetWorkViz.svg.append("svg:defs").selectAll("marker") // Different link/path types can be defined here 
+                            .data(NetWorkViz.RagTypes) 
+                            .enter()        // Needs the Data + Enter in order to completed the rest even though its not doing anything
+                            .append("svg:marker") 
+                                .attr("id", function(d){ return `arrow-${d}`})
+                                .attr("viewBox", "0 -5 10 10") 
+                                .attr("refX", 0) 
+                                .attr("refY", -0) 
+                                .attr("markerWidth", 14) 
+                                .attr("markerHeight", 14) 
+                                .attr("orient", "auto") 
+                                .attr("stroke", "#fff")
+                                .attr("stroke-width", 1)
+                                .append("svg:path") 
+                                    .attr("fill", function(d){  if (d=="Red") { hex = "#e64f1e";}
+                                                            else if (d=="Amber") { hex = "#f2a81f";} 
+                                                            else if (d=="Green") { hex = "#14cc42";}   
+                                                            return hex ;})                          
+                                    .attr("d", "M0,-5L10,0L0,5");
+
+
+  
+                       NetWorkViz.link = NetWorkViz.link.append("g").data(graph.links)
+                            .enter().append("path")  
+                            .attr("class", "path")	 
+                            .attr("fill", "none")
+                            .attr("stroke" , function(d) { return NetWorkViz.FrequencyScaleColor(d.Frequency); } )
+                            .attr("stroke-width" , function(d) { return NetWorkViz.FrequencyScaleStrokeWidth(d.Frequency); })                
+                            ;           
+
+                        NetWorkViz.markerPath = NetWorkViz.svg.append("g").selectAll("path.marker")  // Tis path only goes half way !!!
+                            .data(graph.links)
+                            .enter().append("svg:path")
+                            .attr("class","marker")
+                            .attr("fill", "none")
+                            .attr("stroke","none")                     
+                            .attr("marker-end", function(d) {return `url(${new URL(`#arrow-${d.AHT_Rag}`, location)})`  ; });  
+
+                                                                
+
+
+                        NetWorkViz.node = NetWorkViz.node.data(graph.nodes)
+                            .enter().append("circle")
+                            .attr("class", "node")
+                            .classed("fixed", function (d,i){d.fixed = true})
+                            .style("fill",function(d) { 
+                                                        if (d.Group=="Start")           { hex = "#80b55e";}
+                                                        else if (d.Group=="GroupA")     { hex = "#A39D57";} 
+                                                        else if (d.Group=="GroupB")     { hex = "#659dbd";}   
+                                                        else if (d.Group=="GroupC")     { hex = "#ddad86";}  
+                                                        else if (d.Group=="GroupD")     { hex = "#bc986a";}  
+                                                        else if (d.Group=="Customer")   { hex = "#fbeec1";}  
+                                                        else if (d.Group=="Pending")    { hex = "#b6b8ba";}  
+                                                        else if (d.Group=="End")        { hex = "#f77b6f";}  
+                                                        return hex ;})
+                            
+                            .call(NetWorkViz.drag)
+                            ;
+                        
+                        NetWorkViz.nodeposs = NetWorkViz.svg.append("g").selectAll("#fo")
+                                    .data(graph.nodes)
+                                    .enter()
+                                    .append('foreignObject')
+                                    .attr("class", "nodetext")
+                                    .attr('style', 'display: flex;justify-content: center;align-items: center;text-align:center;vertical-align:middle;padding:2px;margin:2px;')
+
+                                    .call(NetWorkViz.drag)
+                                  ;
+
+
+                             
+                        NetWorkViz.nodename = NetWorkViz.nodeposs.append('xhtml:p') 
+                                .text(function(d){return d.Name;});
+
+                        NetWorkViz.div = d3.select("body").append("div")	
+                            .attr("class", "tooltip")				
+                            .style("opacity", 0);
+                            
+                        NetWorkViz.node.on("mouseover", function(d) {
+                            NetWorkViz.div.transition()		
+                                .duration(200)		
+                                .style("opacity", 1);	
+                                NetWorkViz.div.html({text: d.Name}) 
+                                .style("left", (d3.event.pageX) + "px")		
+                                .style("top", (d3.event.pageY - 28) + "px")
+                                .html( "<B>" + d.Name + "</B><BR>" + d.LatestVolume +" Active Cases")
+                                ;	
+                            })	
+                            .on("mouseout", function(d) {		
+                                NetWorkViz.div.transition()		
+                                    .duration(500)		
+                                    .style("opacity", 0);	
+                            })
+
+
+                        NetWorkViz.nodeposs.on("mouseover", function(d) {
+                            NetWorkViz.div.transition()		
+                                .duration(200)		
+                                .style("opacity", 1);	
+                            NetWorkViz.div.html({text: d.Name}) 
+                                .style("left", (d3.event.pageX) + "px")		
+                                .style("top", (d3.event.pageY - 28) + "px")
+                                .html( "<B>" + d.Name + "</B><BR>" + d.LatestVolume +" Active Cases")
+                                ;	
+                            })		    	
+
+                            .on("mouseout", function(d) {		
+                                NetWorkViz.div.transition()		
+                                    .duration(500)		
+                                    .style("opacity", 0);	
+                            })
+
+
+                        NetWorkViz.arrow_spot = NetWorkViz.svg.append("g").selectAll("rect")
+                            .data(graph.links)
+                            .enter().append("rect")
+                                .attr("x",0)
+                                .attr("y",0)
+                                .attr("width",20)
+                                .attr("height",20)
+                                .style("fill", "#000")
+                                .style("opacity", 0) ;
+                            
+                                                        
+                        NetWorkViz.arrow_spot.on("mouseover", function(d) {
+                            NetWorkViz.div.transition()		
+                                .duration(200)		
+                                .style("opacity", 1);	
+                            NetWorkViz.div.html({text: d.AHT}) 
+                                .style("left", (d3.event.pageX) + "px")		
+                                .style("top", (d3.event.pageY - 28) + "px")
+                                .html( "<B>" +d.AHT_Rag + "</B><BR> Ave. AHT " + d.AHT + " Days <BR> "  + d.Frequency + " Claims Processed")
+                                ;	
+                            })	
+
+                            .on("mouseout", function(d) {		
+                            NetWorkViz.div.transition()		
+                                .duration(500)		
+                                .style("opacity", 0);	
+                        })
+    	
+
+                });
+
+                function tick() {
+
+    
+
+                    NetWorkViz.link.attr("d", function(d) {
+                            // Code answer for this funcaiton here https://stackoverflow.com/questions/15729856/display-an-arrow-head-in-the-middle-of-d3-force-layout-link
+                            var dx = d.target.x - d.source.x,
+                                dy = d.target.y - d.source.y,
+                                dr = Math.sqrt(dx * dx + dy * dy)/1.5;
+
+                            // The End point it true because its the full arc
+                            var endX = d.target.x;
+                            var endY = d.target.y;
+
+                            // Notice that the paths are the arcs generated by a circle whose 
+                            // radius is the same as the distance between the nodes. This simplifies the 
+                            // trig as we can simply apply the 30-60-90 triangle rule to find the difference
+                            // between the radius and the distance to the segment midpoint from the circle 
+                            // center.
+                            var len = dr - ((dr/2) * Math.sqrt(3));
+
+                            return "M" + d.source.x + "," + d.source.y + "A" + dr + "," + dr + " 0 0,1 " + endX + "," + endY;
+                            })
+                            ;
+
+                    NetWorkViz.markerPath.attr("d", function(d) {
+                            // Code answer for this funcaiton here https://stackoverflow.com/questions/15729856/display-an-arrow-head-in-the-middle-of-d3-force-layout-link
+                            // This arc isn't visable, we just use it to possition the arrow half way
+                            var dx = d.target.x - d.source.x,
+                                dy = d.target.y - d.source.y,
+                                dr = Math.sqrt(dx * dx + dy * dy)/1.5;
+
+                            // We know the center of the arc will be some distance perpendicular from the
+                            // link segment's midpoint. The midpoint is computed as:
+                            var endX = (d.target.x + d.source.x) / 2;
+                            var endY = (d.target.y + d.source.y) / 2;
+
+                            // Notice that the paths are the arcs generated by a circle whose 
+                            // radius is the same as the distance between the nodes. This simplifies the 
+                            // trig as we can simply apply the 30-60-90 triangle rule to find the difference
+                            // between the radius and the distance to the segment midpoint from the circle 
+                            // center.
+                            var len = ( dr - ((dr/2) * Math.sqrt(3)))*1.68;   // Had to guess at 1.68!!! :-)
+
+                            // Remember that is we have a line's slope then the perpendicular slope is the 
+                            // negative inverse.
+                            endX = endX + (dy * len/dr);
+                            endY = endY + (-dx * len/dr);
+
+                            return "M" + d.source.x + "," + d.source.y + "A" + dr + "," + dr + " 0 0,1 " + endX + "," + endY;
+                            });
+
+
+                    NetWorkViz.arrow_spot.attr("x", function(d) {
+                            // As Above but Just Returning the Point of the arrow, will add a clear Node for the tool tip
+                            
+                            var dx = d.target.x - d.source.x,
+                                dy = d.target.y - d.source.y,
+                                dr = Math.sqrt(dx * dx + dy * dy)/1.5;
+
+                            var endX = (d.target.x + d.source.x) / 2;
+                            var endY = (d.target.y + d.source.y) / 2;
+
+                            var len = ( dr - ((dr/2) * Math.sqrt(3)))*1.68;   // Had to guess at 1.68!!! :-)
+
+                            endX = endX + (dy * len/dr);
+                            endY = endY + (-dx * len/dr);    
+
+                            return endX-10 ;
+                            });
+
+                    NetWorkViz.arrow_spot.attr("y", function(d) {
+                            // As Above but Just Returning the Point of the arrow, will add a clear Node for the tool tip
+                            
+                            var dx = d.target.x - d.source.x,
+                                dy = d.target.y - d.source.y,
+                                dr = Math.sqrt(dx * dx + dy * dy)/1.5;
+
+                            var endX = (d.target.x + d.source.x) / 2;
+                            var endY = (d.target.y + d.source.y) / 2;
+
+                            var len = ( dr - ((dr/2) * Math.sqrt(3)))*1.68;   // Had to guess at 1.68!!! :-)
+
+                            endX = endX + (dy * len/dr);
+                            endY = endY + (-dx * len/dr);    
+
+                            return endY-10;
+                            });
+
+
+
+                    NetWorkViz.radius = 40,
+                    NetWorkViz.side   = 2 * NetWorkViz.radius * Math.cos(Math.PI / 4);
+
+                    NetWorkViz.node.attr("cx", function(d) { return d.x; })
+                        .attr("cy", function(d) { return d.y; })
+                        .attr("r",NetWorkViz.radius);
+
+
+                    NetWorkViz.nodeposs.attr('x', function(d) { return d.x -(NetWorkViz.side/2); } )
+                        .attr('y', function(d) { return d.y -(NetWorkViz.side/2); } )
+                        .attr('width', NetWorkViz.side)
+                        .attr('height', NetWorkViz.side);
+                }
+
+                function dragstart(d) {
+                    d3.select(this).classed("fixed", d.fixed = true);
+                }
+
+
+
+        </script>
+    </body>
+</html>

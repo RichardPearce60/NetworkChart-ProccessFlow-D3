@@ -1,0 +1,38 @@
+{
+    "nodes": [
+        
+        {"x":50   ,"y":250 ,"Name":"New Claim"                          , "LatestVolume":100    ,"Group":"Start"},
+        {"x":250  ,"y":50  ,"Name":"Claim Submitted"                    , "LatestVolume":200    ,"Group":"GroupA"},
+        {"x":250  ,"y":150 ,"Name":"Information Required"               , "LatestVolume":15    ,"Group":"Customer"},
+        {"x":250  ,"y":350 ,"Name":"Information Reviewed"               , "LatestVolume":350    ,"Group":"GroupA"},
+        {"x":250  ,"y":450 ,"Name":"On Hold"                            , "LatestVolume":410    ,"Group":"Pending"},
+        {"x":500  ,"y":50  ,"Name":"Information Submitted"              , "LatestVolume":70    ,"Group":"GroupA"},
+        {"x":500  ,"y":150 ,"Name":"Additional Information Required"    , "LatestVolume":940    ,"Group":"Customer"},
+        {"x":500  ,"y":350 ,"Name":"Processing Claim"                   , "LatestVolume":754   ,"Group":"GroupB"},
+        {"x":500  ,"y":450 ,"Name":"Reopened"                           , "LatestVolume":123    ,"Group":"GroupB"},
+        {"x":750  ,"y":50  ,"Name":"Payment"                            , "LatestVolume":157    ,"Group":"GroupB"},
+        {"x":750  ,"y":250 ,"Name":"Payment Under Review"               , "LatestVolume":543    ,"Group":"GroupC"},
+        {"x":750  ,"y":450 ,"Name":"Expired Policy"                     , "LatestVolume":856    ,"Group":"GroupD"},
+        {"x":900  ,"y":250 ,"Name":"Claim Closed"                       , "LatestVolume":245    ,"Group":"End"}
+    ],
+    "links": [
+        {"source":  0, "target":  1, "Frequency": 100    ,"AHT":1       ,"AHT_Rag":"Green"},
+        {"source":  1, "target":  2, "Frequency": 500    ,"AHT":4       ,"AHT_Rag":"Amber"},
+        {"source":  2, "target":  0, "Frequency": 450    ,"AHT":4.5     ,"AHT_Rag":"Amber"},
+        {"source":  1, "target":  3, "Frequency": 90     ,"AHT":5       ,"AHT_Rag":"Red"},
+        {"source":  3, "target":  2, "Frequency": 75     ,"AHT":5.2     ,"AHT_Rag":"Red"},
+        {"source":  3, "target":  4, "Frequency": 10     ,"AHT":2       ,"AHT_Rag":"Green"},
+        {"source":  4, "target":  5, "Frequency": 340    ,"AHT":1       ,"AHT_Rag":"Green"},
+        {"source":  5, "target":  6, "Frequency": 150    ,"AHT":0.5     ,"AHT_Rag":"Green"},
+        {"source":  5, "target":  7, "Frequency": 43     ,"AHT":3       ,"AHT_Rag":"Amber"},
+        {"source":  6, "target":  7, "Frequency": 79     ,"AHT":2.5     ,"AHT_Rag":"Green"},
+        {"source":  6, "target":  8, "Frequency": 2      ,"AHT":4       ,"AHT_Rag":"Amber"},
+        {"source":  7, "target":  8, "Frequency": 190    ,"AHT":1       ,"AHT_Rag":"Green"},
+        {"source":  9, "target":  4, "Frequency": 220    ,"AHT":0.8     ,"AHT_Rag":"Green"},
+        {"source":  9, "target": 11, "Frequency": 700    ,"AHT":3       ,"AHT_Rag":"Green"},
+        {"source":  9, "target": 10, "Frequency": 400    ,"AHT":1       ,"AHT_Rag":"Green"},
+        {"source": 10, "target": 11, "Frequency": 300    ,"AHT":6       ,"AHT_Rag":"Red"},
+        {"source": 11, "target": 12, "Frequency": 100    ,"AHT":3       ,"AHT_Rag":"Green"},
+        {"source": 12, "target": 10, "Frequency": 50     ,"AHT":1       ,"AHT_Rag":"Green"}
+    ]
+  }
